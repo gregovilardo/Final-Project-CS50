@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slackeala</title>
+	<!-- bootstrap -->
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
+    <!-- fonts -->
+    <script src="https://secure.exportkit.com/cdn/js/ek_googlefonts.js?v=4"></script>
+    <!-- vue.js -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+</head>
+<body>
+
+	<div id="app">
+
+		
+
+		<!-- complements -->
+		{% if error %}
+			<error-comp v-if="showError" v-on:close-error-comp="showError=$event"></error-comp>
+		{% endif %}
+
+		<upload-video v-if="show" v-on:close-upload-video="show=$event"></upload-video>
+
+		{% if uploaded_video %}
+			<uploaded-video v-if="showUploadVideo" v-on:close-uploaded-video="showUploadVideo=$event"></uploaded-video>
+		{% endif %}
+		<!--  -->
+
+		<picture-question v-if="showProfileComp" v-on:close-profile-pic="showProfileComp=$event"></picture-question>
+
+		<div class="front">
+				<nav class="navbar navbar-expand-lg navbar-light" style="background-color: #E99B06;">
+					<div class="container-fluid">
+					  <a class="navbar-brand"  href="[[ url_for('index') ]]">
+						<img class="profile" src="../static/skins/home.svg" alt="go back home">
+					  </a>
+					  <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+						<span class="navbar-toggler-icon"></span>
+					  </button>
+					  <div class="collapse navbar-collapse" id="navbarSupportedContent">
+						  	<form class="d-flex ms-auto" action="/searchVideo" method="POST">
+							  <input class="form-control me-2" type="search" placeholder="Name a trick" name="videoNameTrick" aria-label="Search">
+							  <button class="btn btn-outline-dark" type="submit">Search</button>
+							</form>
+							<ul class="navbar-nav ms-auto">
+							  <li class="nav-item">
+								<a class="nav-link active" aria-current="page" href="#">
+									<img class="upload-video-cross" src="../static/skins/uploadVideo.svg" alt="cross to upload video" v-on:click="show=true">
+								</a>
+							  </li>
+							  <li class="nav-item"><a class="nav-link" style="font-weight: 700;" href="/logout">Log Out</a></li>
+							</ul>
+					  </div>
+					</div>
+				</nav>
+
+				{% if profilePic %}
+				<img src="[[ profilePic ]]" v-on:click="showProfileComp=true" class="profile-user-pic">
+				{% else %}
+				<img class="profileDef"  v-on:click="showProfileComp=true" src="../static/skins/ProfDefPic.svg" alt="default pic profile">
+				{% endif %}
+				<img class="uploadPic"  src="../static/skins/UploadProfilePic.svg" alt="upload pic">
+
+				<div class="username">[[ username ]]</div>
+
+				{% if uservideos %}
+				{% for uservideo in uservideos %}
+				<div class="user-videos">
+					<ul class="list-group">
+						<li class="list-group-item">
+							<a href="[[ uservideo.route ]]">[[ uservideo.name ]]</a>
+							<form style="display:contents;" action="deleteVideo" method="POST">
+								<input type="hidden" name="videoToDelete" value="[[ uservideo.id ]]">
+								<button style="float: right;background-color: white; border: none; outline:none;"><img src="../static/skins/x_to_close_comp.svg" alt="exit_cross"></button>
+							</form>
+						</li>
+					  </ul>
+				</div>
+				{% endfor %}
+				{% else %}
+				<div class="user-videos">
+					<ul class="list-group">
+						<li class="list-group-item">The user has not upload any videos yet</li>
+					  </ul>
+				</div>
+                {% endif %}
+
+			
+		</div>
+	</div>
+
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" crossorigin="anonymous"></script>
+
+
+	<!-- script of Vue.js -->
+	<script>
+		Vue.component("picture-question", {
+			template: `
+			<div class="upload-mask">
+				<div class="upload-wrapper">
+					<div class="prof-container">
+						<div class="upload-header">
+							<img src="../static/skins/x_to_close_comp.svg"  v-on:click="$emit('close-profile-pic', false)" alt="exit_cross">
+						</div>
+						<div class="upload-body">
+							<form action="uploadProfPic" method="post" id="prof-pic"  enctype=multipart/form-data >
+								<input type="file" class="inputfile" name="file" id="file" v-on:change="submitOnChange" accept="image/*" >
+								<!-- <input type="submit" name="submit" value="submit"> -->
+								<label for="file">
+									<div class="upImg">Upload a profile picture<div>
+								</label>
+							</form>
+							<form action="deleteProfilePic" method="post" >
+								<button class="delImg" type="submit">Delete Picture</button>
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+			`,
+			methods: {
+				submitOnChange () {
+					document.getElementById("prof-pic").submit();
+					return true
+				}
+			}
+		})
+		Vue.component("uploaded-video", {
+			template:`
+				<div class="upload-mask">
+					<div class="uploaded-wrapper">
+						<div class="uploaded-container">
+							<div class="uploaded-header">
+								<img src="../static/skins/x_to_close_comp.svg" width="14" height="14" v-on:click="refreshPage()" alt="exit_cross">
+							</div>
+							<video src="[[ uploaded_video ]]" width="1280" height="720" controls></video>
+						</div>
+					</div>
+				</div>
+			`,
+			methods: {
+				refreshPage() {
+					window.location.href="/"
+				}
+			}
+		})
+		Vue.component("error-comp", {
+			template: `
+				<div class="upload-mask">
+					<div class="upload-wrapper">
+						<div class="upload-container">
+
+							<div class="upload-header">
+								<img src="../static/skins/x_to_close_comp.svg"  v-on:click="$emit('close-error-comp', false)" alt="exit_cross">
+							</div>
+
+							<div class="err">
+								<h4>[[ error ]]</h4>
+							</div>
+						</div>
+					</div>
+				</div>
+			`
+		})
+		Vue.component("upload-video", {
+			template: `
+			<form action="/uploadVideo" method="post" enctype=multipart/form-data @submit="onSubmit($event)">
+				
+				<div class="upload-mask">
+					<div class="upload-wrapper">
+						<div class="upload-container">
+							
+							
+							<img style="position: relative; left: 330px; cursor:pointer;" src="../static/skins/x_to_close_comp.svg"  v-on:click="$emit('close-upload-video', false)" alt="exit_cross">
+							
+							<div class="errores">
+								<p v-if="errors.length">
+									<b>Please correct the following error(s):</b>
+									<ul>
+										<li v-for="error in errors">{{ error }}</li>
+									</ul>
+								</p>
+							</div>
+							<div class="conteiner">
+
+								<div class="upload-input-file">
+									<input type="file" name="file" id="file" class="file" v-model="file" accept=.mp4>
+								</div>
+								<div class="upload-body">
+
+									<div class="video-name">
+										<input autocomplete="off" name="videoName" id="videoName" v-model="videoName" placeholder="Name your trick">
+									</div>
+
+									<button class="upload-button" type="submit" value="Submit"><img class="lock_vector" src="../static/skins/upArrow.svg" alt="Upload"></button>  
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>    
+
+			</form>
+			`,
+			data() {
+				return {
+					videoName: null,
+					file: null,
+					errors: [],
+				}
+			},
+			methods: {
+				onSubmit(event) {
+                    this.errors = []
+					if (this.videoName && this.file) {
+						return true
+					}
+					else {
+                        if(!this.file) this.errors.push("File required.")
+                        if(!this.videoName) this.errors.push("You must name the trick")
+                        event.preventDefault()
+                    }
+			    },
+			}
+		})
+		var app = new Vue({
+			el: '#app',
+			data: {
+				show: false,
+				showUploadVideo: true,
+				showError: true,
+				showProfileComp: false,
+			},
+			methods: {
+				deleteVideo() {
+
+				}
+			}
+		})
+
+	</script>
+	
+	<style>
+
+@media only screen 
+            and (min-device-width : 768px) {
+                
+		body {
+			position: relative;
+			background: linear-gradient(180deg, rgba(233, 155, 6, 0.59) 0%, rgba(231, 200, 142, 0.59) 100%), #FFFFFF;
+			background-repeat: no-repeat;
+			overflow-x: hidden;
+			height: 100%;
+			margin: 0;
+			background-repeat: no-repeat;
+			background-attachment: fixed;
+			
+		}
+		.front {
+			position: fixed;
+			overflow-y:scroll;
+			/* display: inline-block; */
+			width: 67.5rem;
+			height: max-content;
+			display: inline-block;
+			flex-direction: column;
+			min-height: 100vh;
+			left: 50%;
+			transform: translate(-50%, 0);
+			background: #F8F8F8;
+			box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.25);
+		}
+
+		.prof-container{
+			width: 400px;
+			height: 200px;
+			margin: 0px auto;
+			padding: 20px 30px;
+			background-color: #F8F8F8;
+			border-radius: 2px;
+			box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
+			transition: all .3s ease;
+			font-family: Helvetica, Arial, sans-serif;
+		}
+
+		.delImg{
+			display: block;
+			flex-direction: row;
+			justify-content: center;
+			align-items: center;
+			padding: 10px;
+			position: relative;
+			width: 256px;
+			height: 36px;
+			overflow: hidden;
+			background: #E99B06;
+			border: 1px solid #E99B06;
+			/* box-sizing: border-box; */
+			border-radius: 24px;
+			color: white;
+			font-size: 0.875rem;
+			margin: 10px;
+		}
+
+		.delImg:hover,
+		.delImg:focus-within {
+			background: #d47f00;
+		}
+
+		.upImg{
+			display: flex;
+			flex-direction: row;
+			justify-content: center;
+			align-items: center;
+			padding: 10px;
+			position: relative;
+			width: 256px;
+			height: 45px;
+			/* left: 1145px;
+			top: 597px; */
+			background: #4D360B;
+			border: 1px solid #E99B06;
+			box-sizing: border-box;
+			border-radius: 64px;
+			color: white;
+			font-size: 18px;
+			cursor: pointer;
+			margin: 10px
+		}
+		
+
+
+        .inputfile {
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            position: absolute;
+            z-index: -1;
+        }
+
+		
+			
+		.user-banner {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			padding: 14px;
+			position: fixed;
+			width: 50rem;
+			height: 4.7rem;
+			background: #cacaca;
+			font-family: Inter;
+			font-style: normal;
+			font-weight: 500;
+			font-size: 18px;
+			line-height: 16px;
+			color: #2C1F06;
+			
+		}
+		.banner-pic {
+			order: 0;
+			margin: 0px 10px;
+		}
+		.profile-user-pic {
+			height: 200px;
+			width: 200px;
+			border-radius: 50%;
+			border: 4px solid #4C360B;
+			position: absolute;
+            left: 50%;
+            top: 100px;
+            transform: translate(-50%);
+            cursor: pointer;
+		}
+
+        .uploadPic {
+            display: none;
+            position: absolute;
+            left: 50%;
+            top: 235px;
+            transform: translate(-50%);
+            pointer-events: none;
+        }
+        .profileDef {
+            position: absolute;
+            left: 50%;
+            top: 100px;
+            transform: translate(-50%);
+            cursor: pointer;
+        }
+
+        .profileDef:hover + .uploadPic {
+            display: block;
+        }
+
+		.profile-user-pic:hover + .uploadPic {
+            display: block;
+        }
+
+		.username {
+			position: relative;
+			top: 250px;
+			font-size: 24px;
+			font-weight: 700;
+			font-family: Inter;
+			text-align: center;
+		}
+
+		.upload-mask {
+			position: fixed;
+			z-index: 9998;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background-color: rgba(0, 0, 0, .5);
+			display: table;
+			transition: opacity .3s ease;
+		}
+
+		.upload-wrapper {
+			display: table-cell;
+			vertical-align: middle;
+		}
+
+		.upload-container {
+			width: 400px;
+			height: 400px;
+			margin: 0px auto;
+			padding: 20px 30px;
+			background-color: #F8F8F8;
+			border-radius: 2px;
+			box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
+			transition: all .3s ease;
+			font-family: Helvetica, Arial, sans-serif;
+		}
+
+		.conteiner{
+			position: sticky;
+			top: 30rem;
+		}
+		
+		.errores {
+			color: #E7414C;
+		}
+
+		.upload-body {
+			position: relative;
+			top: 1rem;
+			left: 2rem;
+		}
+
+		.upload-default-button {
+			float: right;
+		}
+
+		.video-name input {
+			outline: none;
+			display: flex;
+			flex-direction: row;
+			align-items: flex-start;
+			padding: 10px;
+			position: relative;
+			background: #FFFFFF;
+			border: 1px solid #ea9a06;
+			box-sizing: border-box;
+			border-radius: 24px;
+			color: #2C1F06;
+			width: 256px;
+			height: 36px;
+			font-size: 0.875rem;
+			margin: 10px;
+			padding-left: 20px;
+		}
+
+		.upload-button {
+			display: inline-block;
+			flex-direction: row;
+			justify-content: center;
+			align-items: center;
+			/* padding: 10px; */
+			position: relative;
+			width: 256px;
+			height: 36px;
+			overflow: hidden;
+			background: #E99B06;
+			border: 1px solid #2C1F06;
+			/* box-sizing: border-box; */
+			border-radius: 24px;
+			color: #2C1F06;
+			font-size: 1rem;
+			margin: 10px;
+		}
+
+		/* end component style */
+
+		.user-videos {
+			position: relative;
+			top: 300px;
+		}
+
+		.user-videos a:link, a:visited {
+			color: #2C1F06;
+			text-decoration:none;
+			cursor: pointer;
+			font-family: Inter;
+			font-weight: 700;
+		}
+
+		.user-videos a:hover {
+			position: relative;
+			left: 10px;
+		}
+
+		/*component uploaded style*/
+		.uploaded-mask {
+			position: fixed;
+			z-index: 9998;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background-color: rgba(0, 0, 0, .5);
+			display: table;
+			transition: opacity .3s ease;
+		}
+
+		.uploaded-wrapper {
+			display: table-cell;
+			vertical-align: middle;
+		}
+
+		.uploaded-container {
+			width: 1340px;
+			height: 760px;
+			margin: 0px auto;
+			padding: 20px 30px;
+			background-color: rgba(14, 10, 4, 0.788);
+			border-radius: 2px;
+			box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
+			transition: all .3s ease;
+			font-family: Helvetica, Arial, sans-serif;
+		}
+
+		.uploaded-header {
+			position: fixed;
+			top: 10%;
+			left: 83.8%;
+		}
+
+		.err {
+			position: fixed;
+			left: 50%;
+			top:50%;
+			transform: translate(-50%, -50%);
+			color: #E7414C;
+		}
+	}
+		/* end component style */
+		@media only screen 
+                and (max-device-width : 1000px) {
+		body {
+			position: relative;
+			background: linear-gradient(180deg, rgba(233, 155, 6, 0.59) 0%, rgba(231, 200, 142, 0.59) 100%), #FFFFFF;
+			background-repeat: no-repeat;
+			overflow-x: hidden;
+			height: 100%;
+			margin: 0;
+			background-repeat: no-repeat;
+			background-attachment: fixed;
+			
+		}
+		.front {
+			position: relative;
+			overflow-y:scroll;
+			/* display: inline-block; */
+			width: 23rem;
+			height: max-content;
+			display: inline-block;
+			flex-direction: column;
+			min-height: 100vh;
+			left: 50%;
+			transform: translate(-50%, 0);
+			background: #F8F8F8;
+			box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.25);
+		}
+
+		.prof-container{
+			width: 400px;
+			height: 200px;
+			margin: 0px auto;
+			padding: 20px 30px;
+			background-color: #F8F8F8;
+			border-radius: 2px;
+			box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
+			transition: all .3s ease;
+			font-family: Helvetica, Arial, sans-serif;
+		}
+
+		.delImg{
+			display: block;
+			flex-direction: row;
+			justify-content: center;
+			align-items: center;
+			padding: 10px;
+			position: relative;
+			width: 256px;
+			height: 36px;
+			overflow: hidden;
+			background: #E99B06;
+			border: 1px solid #E99B06;
+			/* box-sizing: border-box; */
+			border-radius: 24px;
+			color: white;
+			font-size: 0.875rem;
+			margin: 10px;
+		}
+
+		.delImg:hover,
+		.delImg:focus-within {
+			background: #d47f00;
+		}
+
+		.upImg{
+			display: flex;
+			flex-direction: row;
+			justify-content: center;
+			align-items: center;
+			padding: 10px;
+			position: relative;
+			width: 256px;
+			height: 45px;
+			/* left: 1145px;
+			top: 597px; */
+			background: #4D360B;
+			border: 1px solid #E99B06;
+			box-sizing: border-box;
+			border-radius: 64px;
+			color: white;
+			font-size: 18px;
+			cursor: pointer;
+			margin: 10px
+		}
+		
+
+
+        .inputfile {
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            position: absolute;
+            z-index: -1;
+        }
+			
+		.user-banner {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			padding: 14px;
+			position: fixed;
+			width: 50rem;
+			height: 4.7rem;
+			background: #cacaca;
+			font-family: Inter;
+			font-style: normal;
+			font-weight: 500;
+			font-size: 18px;
+			line-height: 16px;
+			color: #2C1F06;
+			
+		}
+		.banner-pic {
+			order: 0;
+			margin: 0px 10px;
+		}
+		.profile-user-pic {
+			height: 200px;
+			width: 200px;
+			border-radius: 50%;
+			border: 4px solid #4C360B;
+			position: absolute;
+            left: 50%;
+            top: 100px;
+            transform: translate(-50%);
+            cursor: pointer;
+		}
+
+        .uploadPic {
+            display: none;
+            position: absolute;
+            left: 50%;
+            top: 235px;
+            transform: translate(-50%);
+            pointer-events: none;
+        }
+        .profileDef {
+            position: absolute;
+            left: 50%;
+            top: 100px;
+            transform: translate(-50%);
+            cursor: pointer;
+        }
+
+        .profileDef:hover + .uploadPic {
+            display: block;
+        }
+
+		.profile-user-pic:hover + .uploadPic {
+            display: block;
+        }
+
+			
+		.user-banner {
+			position: relative;
+			/* top: 8rem; */
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			padding: 14px;
+			width: 23rem;
+			height: 3.7rem;
+			background: #cacaca;
+			font-family: Inter;
+			font-style: normal;
+			font-weight: 500;
+			font-size: 18px;
+			line-height: 16px;
+			color: #2C1F06;
+			
+		}
+		.banner-pic {
+			order: 0;
+			margin: 0px 10px;
+		}
+
+		.upload-mask {
+			position: fixed;
+			z-index: 9998;
+			top: 0;
+			left: -15px;
+			width: 100%;
+			height: 100%;
+			background-color: rgba(0, 0, 0, .5);
+			display: table;
+			transition: opacity .3s ease;
+		}
+
+		.upload-wrapper {
+			display: table-cell;
+			vertical-align: middle;
+		}
+
+		.user-videos {
+			position: relative;
+			top: 300px;	
+		}
+
+		.user-videos a:link, a:visited {
+			color: #2C1F06;
+			text-decoration:none;
+			cursor: pointer;
+			font-family: Inter;
+			font-weight: 700;
+		}
+
+		.user-videos a:hover {
+			position: relative;
+			left: 10px;
+		}
+
+		.username {
+			position: relative;
+			top: 250px;
+			font-size: 24px;
+			font-weight: 700;
+			font-family: Inter;
+			text-align: center;
+		}
+
+		.upload-container {
+			width: 400px;
+			height: 400px;
+			margin: 0px auto;
+			padding: 20px 30px;
+			background-color: #F8F8F8;
+			border-radius: 2px;
+			box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
+			transition: all .3s ease;
+			font-family: Helvetica, Arial, sans-serif;
+		}
+
+		.conteiner{
+			position: sticky;
+			top: 30rem;
+		}
+		
+		.errores {
+			color: #E7414C;
+		}
+
+		.upload-body {
+			position: relative;
+			top: 1rem;
+			left: 2rem;
+		}
+
+		.upload-default-button {
+			float: right;
+		}
+
+		.video-name input {
+			outline: none;
+			display: flex;
+			flex-direction: row;
+			align-items: flex-start;
+			padding: 10px;
+			position: relative;
+			background: #FFFFFF;
+			border: 1px solid #ea9a06;
+			box-sizing: border-box;
+			border-radius: 24px;
+			color: #2C1F06;
+			width: 256px;
+			height: 36px;
+			font-size: 0.875rem;
+			margin: 10px;
+			padding-left: 20px;
+		}
+
+		.upload-button {
+			display: inline-block;
+			flex-direction: row;
+			justify-content: center;
+			align-items: center;
+			/* padding: 10px; */
+			position: relative;
+			width: 256px;
+			height: 36px;
+			overflow: hidden;
+			background: #E99B06;
+			border: 1px solid #2C1F06;
+			/* box-sizing: border-box; */
+			border-radius: 24px;
+			color: #2C1F06;
+			font-size: 1rem;
+			margin: 10px;
+		}
+
+		/* end component style */
+
+		/*component uploaded style*/
+		.uploaded-mask {
+			position: fixed;
+			z-index: 9998;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background-color: rgba(0, 0, 0, .5);
+			display: table;
+			transition: opacity .3s ease;
+		}
+
+		.uploaded-wrapper {
+			display: table-cell;
+			vertical-align: middle;
+		}
+
+		.uploaded-container {
+			width: auto;
+			height: auto;
+			margin: 0px auto;
+			padding: 20px 30px;
+			background-color: rgba(14, 10, 4, 0.788);
+			border-radius: 2px;
+			box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
+			transition: all .3s ease;
+			font-family: Helvetica, Arial, sans-serif;
+		}
+
+		video {
+			width: 100%;
+			height: 100%;
+		}
+
+		.uploaded-header {
+			position: fixed;
+
+		}
+
+		.err {
+			position: fixed;
+			left: 50%;
+			top:50%;
+			transform: translate(-50%, -50%);
+			color: #E7414C;
+		}
+	}
+
+	</style>
+
+</body>
+</html>
